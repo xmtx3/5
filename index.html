@@ -1,1 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>命宫计算器</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --bg-color: #f7f8fa;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --text-sub: #666;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        h2 { text-align: center; font-size: 1.2rem; margin-bottom: 24px; }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 14px; }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .gender-group { display: flex; gap: 10px; }
+        .gender-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .gender-btn.active {
+            border-color: var(--primary-color);
+            background: #f0f9f0;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .calc-btn {
+            width: 100%;
+            padding: 14px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* 结果区域 */
+        #result-area {
+            margin-top: 30px;
+            border-top: 4px solid var(--primary-color);
+            padding-top: 20px;
+            display: none;
+        }
+
+        .result-title { text-align: center; color: var(--text-sub); font-size: 14px; }
+        .result-number { text-align: center; font-size: 64px; font-weight: bold; margin: 10px 0; }
+        .result-gua { text-align: center; font-size: 24px; color: var(--primary-color); font-weight: bold; margin-bottom: 20px; }
+
+        .tags { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+        .tag { background: #f2f2f2; padding: 4px 12px; border-radius: 4px; font-size: 12px; color: var(--text-sub); }
+
+        .personality-box {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .personality-box span { font-size: 14px; font-weight: bold; color: var(--text-sub); display: block; margin-bottom: 5px; }
+        .personality-box p { margin: 0; font-size: 15px; line-height: 1.5; }
+
+        .process-box {
+            font-size: 13px;
+            color: #888;
+            background: #fff;
+            border: 1px dashed #eee;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .process-step { margin-bottom: 5px; }
+        .process-step b { color: #555; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>命宫计算</h2>
+    
+    <div class="form-group">
+        <label>出生年份 (公历)</label>
+        <input type="number" id="birthYear" placeholder="如 1991" value="2026">
+    </div>
+
+    <div class="form-group">
+        <label>性别</label>
+        <div class="gender-group">
+            <div class="gender-btn active" onclick="setGender('male')">♂ 男</div>
+            <div class="gender-btn" onclick="setGender('female')">♀ 女</div>
+        </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">开始计算</button>
+
+    <div id="result-area">
+        <div class="result-title">您的命宫数</div>
+        <div class="result-number" id="resNum">-</div>
+        <div class="result-gua" id="resGua">-</div>
+        
+        <div class="tags" id="resTags">
+            </div>
+
+        <div class="personality-box">
+            <span>性格特质参考</span>
+            <p id="resDesc">-</p>
+        </div>
+
+        <div class="process-box" id="processBox">
+            </div>
+    </div>
+</div>
+
+<script>
+    let currentGender = 'male';
+
+    function setGender(g) {
+        currentGender = g;
+        document.querySelectorAll('.gender-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if(btn.innerText.includes(g === 'male' ? '男' : '女')) btn.classList.add('active');
+        });
+    }
+
+    const guaInfo = {
+        1: { name: "坎 (Kǎn)", symbol: "☵", element: "水命", group: "东四命", dir: "正北", desc: "随圆就方，外柔内刚，心思缜密，适应力强。" },
+        2: { name: "坤 (Kūn)", symbol: "☷", element: "土命", group: "西四命", dir: "西南", desc: "厚德载物，为人稳重，包容力强，踏实肯干。" },
+        3: { name: "震 (Zhèn)", symbol: "☳", element: "木命", group: "东四命", dir: "正东", desc: "志气轩昂，勇往直前，行动力强，刚毅果断。" },
+        4: { name: "巽 (Xùn)", symbol: "☴", element: "木命", group: "东四命", dir: "东南", desc: "谦逊温和，情感丰富，思维敏捷，善于协调。" },
+        6: { name: "乾 (Qián)", symbol: "☰", element: "金命", group: "西四命", dir: "西北", desc: "刚健中正，领导力强，果断威严，胸怀大志。" },
+        7: { name: "兑 (Duì)", symbol: "☱", element: "金命", group: "西四命", dir: "正西", desc: "口才出众，活泼开朗，感性敏锐，善于交际。" },
+        8: { name: "艮 (Gèn)", symbol: "☶", element: "土命", group: "西四命", dir: "东北", desc: "稳如泰山，坚韧不拔，处事严谨，独立自尊。" },
+        9: { name: "离 (Lí)", symbol: "☲", element: "火命", group: "东四命", dir: "正南", desc: "热情明理，洞察力强，富有魅力，重视礼仪。" }
+    };
+
+    function calculate() {
+        const year = document.getElementById('birthYear').value;
+        if(!year || year < 1000) { alert("请输入正确的年份"); return; }
+
+        // 1. 年份数字相加
+        let digits = year.toString().split('');
+        let sum = digits.reduce((a, b) => parseInt(a) + parseInt(b), 0);
+        
+        // 2. 减去9直至小于等于9 (求余逻辑)
+        let remainder = sum % 9;
+        if(remainder === 0) remainder = 9;
+
+        // 3. 计算最终命宫数
+        let finalNum;
+        let processText = `
+            <div class="process-step"><b>1. 出生年份相加:</b> ${digits.join('+')} = ${sum}</div>
+            <div class="process-step"><b>2. 简化余数:</b> ${sum} -> ${remainder}</div>
+        `;
+
+        if(currentGender === 'male') {
+            finalNum = 11 - remainder;
+            processText += `<div class="process-step"><b>3. 男生用11减:</b> 11 - ${remainder} = ${finalNum}</div>`;
+        } else {
+            finalNum = 4 + remainder;
+            processText += `<div class="process-step"><b>3. 女生用4加:</b> 4 + ${remainder} = ${finalNum}</div>`;
+        }
+
+        // 处理大于9的情况
+        if(finalNum > 9) {
+            let oldNum = finalNum;
+            finalNum = finalNum - 9;
+            processText += `<div class="process-step"><b>4. 结果大于9再减9:</b> ${oldNum} - 9 = ${finalNum}</div>`;
+        }
+
+        // 处理5的情况（男寄坤2，女寄艮8）
+        if(finalNum === 5) {
+            let target = currentGender === 'male' ? 2 : 8;
+            processText += `<div class="process-step"><b>注:</b> 命宫为5，${currentGender === 'male' ? '男寄坤2' : '女寄艮8'}</div>`;
+            finalNum = target;
+        }
+
+        // 渲染结果
+        const data = guaInfo[finalNum];
+        document.getElementById('resNum').innerText = finalNum;
+        document.getElementById('resGua').innerText = `${data.symbol} ${data.name}`;
+        document.getElementById('resDesc').innerText = data.desc;
+        
+        const tags = [data.element, data.group, data.dir];
+        document.getElementById('resTags').innerHTML = tags.map(t => `<div class="tag">${t}</div>`).join('');
+        document.getElementById('processBox').innerHTML = processText;
+
+        document.getElementById('result-area').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
